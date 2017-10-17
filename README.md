@@ -1,0 +1,1 @@
+Java encode & decode,other  concept about security.
