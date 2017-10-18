@@ -1,59 +1,26 @@
-package me.huqiao.java.security.dsa;
+package me.huqiao.java.security.ecc;
 
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
+import javax.crypto.Cipher;
+
 import me.huqiao.java.security.base64.Base64Util;
 
-public class DSAUtil {
-
-	static final String ALGORITHM = "DSA";
+public class ECCUtil {
+	
+	static final String ALGORITHM = "EC";
 	
 	private static KeyPair getKeyPair()throws Exception{
 		KeyPairGenerator generator = KeyPairGenerator.getInstance(ALGORITHM);
-		generator.initialize(1024);
+		generator.initialize(571);
 		return generator.genKeyPair();
 	}
-	
-
-	
-	/**
-	 * 用私钥签名
-	 * @param data
-	 * @param privateKey
-	 * @return
-	 */
-	public static String sign(String data,String privateKey)throws Exception{
-		PrivateKey priKey = getPrivateKey(privateKey);
-		Signature sign = Signature.getInstance(ALGORITHM);
-		sign.initSign(priKey);
-		sign.update(data.getBytes("UTF-8"));
-		byte[] signBytes = sign.sign();
-		return Base64Util.encode(signBytes);
-	}
-	
-	/**
-	 * 用公钥进行签名验证
-	 * @param data
-	 * @param publicKey
-	 * @param signData
-	 * @return
-	 * @throws Exception
-	 */
-	public static boolean verify(String data,String publicKey,String signData)throws Exception{
-		PublicKey pubKey = getPublicKey(publicKey);
-		Signature sign = Signature.getInstance(ALGORITHM);
-		sign.initVerify(pubKey);
-		sign.update(data.getBytes("UTF-8"));
-		return sign.verify(Base64Util.decode(signData));
-	}
-	
 	
 	private static PublicKey getPublicKey(String key)throws Exception{
 		X509EncodedKeySpec keySpec = new X509EncodedKeySpec(Base64Util.decode(key));
@@ -90,8 +57,36 @@ public class DSAUtil {
 		return res;
 	}
 	
+	/**
+	 * 加密
+	 * @param data
+	 * @param privateKey
+	 * @return
+	 */
+	public static String encrypt(String data,String privateKey)throws Exception{
+		PrivateKey priKey = getPrivateKey(privateKey);
+		Cipher cipher = Cipher.getInstance(ALGORITHM,"SunEC");
+		cipher.init(Cipher.ENCRYPT_MODE, priKey);
+		byte[] bytes = cipher.doFinal(data.getBytes("UTF-8"));
+		return Base64Util.encode(bytes);
+	}
+	
+	/**
+	 * 解密
+	 * @param data
+	 * @param publicKey
+	 * @return
+	 */
+	public static String decrypt(String data,String publicKey)throws Exception{
+		PublicKey pubKey = getPublicKey(publicKey);
+		Cipher cipher = Cipher.getInstance(ALGORITHM);
+		cipher.init(Cipher.DECRYPT_MODE, pubKey);
+		byte[] bytes = cipher.doFinal(Base64Util.decode(data));
+		return new String(bytes,"UTF-8");
+	}
+
 	public static void main(String[] args) throws Exception{
-		String data = "Hello,DSA";
+		String data = "Hello,ECC";
 		String[] keyPair = getStringKeyPair();
 		String pubKey = keyPair[0];
 		String priKey = keyPair[1];
@@ -102,8 +97,10 @@ public class DSAUtil {
 		System.out.println(priKey);
 		System.out.println();
 		
-		String signData = sign(data, priKey);
-		System.out.println("Sign Data:" + signData);
-		System.out.println("Verify Result:" + verify(data, pubKey, signData));
+		String signData = encrypt(data, priKey);
+		System.out.println("加密后:" + signData);
+		System.out.println("解密后:" + decrypt(data, pubKey));
+		
+		
 	}
 }
